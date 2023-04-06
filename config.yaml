@@ -1,13 +1,13 @@
 # Vectra brain API access.
 vectra:
-  url: 'https:/<BRAIN_FQDN>/'
+  url: 'https://<BRAIN_FQDN>/'
   api_token: 'youneedanapikeyheregetonefromyourprofile'  # Please ensure read access to this file is limited
 
 # LDAP configuration
 ldap:
-  url: 'LDAP://<LDAP_Server>'
+  url: 'ldaps://<LDAP_Server>'
   base_dn: 'DC=domain,DC=local'
-  ldap_user: 'user@domain.local'
+  ldap_user: 'cn=user,ou=test,dc=domain,dc=local'
   ldap_password: 'Secret' # Please ensure read access to this file is limited
 
 # Logging configuration

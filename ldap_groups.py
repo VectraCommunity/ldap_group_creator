@@ -6,7 +6,9 @@ import os
 import sys
 import ldap3.core.exceptions
 import ldap3.utils.dn
-from ldap3 import Server, Connection, SAFE_SYNC
+import ssl
+from ldap3 import Server, Connection, SAFE_SYNC, Tls, NTLM, KERBEROS
+from ssl import CERT_NONE, PROTOCOL_TLSv1_2
 from logging.handlers import TimedRotatingFileHandler
 from logging.handlers import TimedRotatingFileHandler
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -35,7 +37,6 @@ class LDAPClient():
                 server=server, 
                 user=username, 
                 password=password, 
-                client_strategy=SAFE_SYNC, 
                 auto_bind=True
             )
         except ldap3.core.exceptions.LDAPSocketOpenError as e:
@@ -44,13 +45,13 @@ class LDAPClient():
         self.base_dn = base_dn
         
     def get_domain_controllers(self) -> list:
-        status, result, response, _ = self.connection.search(
-            search_base='OU=Domain Controllers,{}'.format(self.base_dn), 
+        self.connection.search(
+            search_base=f'OU=Domain Controllers,{self.base_dn}', 
             search_filter='(objectCategory=computer)'
             )
         results = set()
-        for entry in response:
-            base_name = ldap3.utils.dn.parse_dn(entry['dn'])[0][0]
+        for entry in self.connection.response:
+            base_name = ldap3.utils.dn.parse_dn(entry['dn'])[0][1]
             results.add(base_name)
         return list(results)
 
@@ -84,7 +85,7 @@ class VectraGroupManager(vectra.VectraClientV2_2):
             for host in page.json()['results']:
                 matching_hosts.append(host)
         if len(matching_hosts) > 1:
-            self.logger.warn('More than one host found matching dn {}'.format(hostname))
+            self.logger.warning('More than one host found matching dn {}'.format(hostname))
         return set([host['id'] for host in matching_hosts])
         
     def get_matching_host_ids(self, ldap_hostnames:list, use_regex=False)->list:
@@ -149,7 +150,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)    
     logger = logging.getLogger('ADGroupCreator')
-
     vgm = VectraGroupManager(
         vectra_appliance_url=config['vectra']['url'], 
         api_token=config['vectra']['api_token']
